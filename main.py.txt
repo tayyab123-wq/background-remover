@@ -1,0 +1,42 @@
+from flask import Flask, request, send_file, render_template_string
+from rembg import remove
+import io
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return render_template_string('''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Background Remover</title>
+    </head>
+    <body style="text-align:center; padding:40px;">
+        <h2>Upload Image to Remove Background</h2>
+        <form action="/remove-bg" method="POST" enctype="multipart/form-data">
+            <input type="file" name="image" required />
+            <button type="submit">Remove Background</button>
+        </form>
+    </body>
+    </html>
+    ''')
+
+@app.route('/remove-bg', methods=['POST'])
+def remove_bg():
+    if 'image' not in request.files:
+        return "No image uploaded", 400
+
+    img_file = request.files['image']
+    input_bytes = img_file.read()
+    output_bytes = remove(input_bytes)
+
+    return send_file(
+        io.BytesIO(output_bytes),
+        mimetype='image/png',
+        as_attachment=True,
+        download_name='output.png'
+    )
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
